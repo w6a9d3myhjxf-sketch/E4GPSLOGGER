@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>N.E.C.O. - 高精度GPS実測ロガー</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0b0f19;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 10px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding-bottom: 50px;
+        }
+
+        /* パスワード認証オーバーレイ */
+        #auth-overlay, #pwd-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 15, 25, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 15px;
+        }
+        .auth-card {
+            background: #151c2f;
+            border: 1px solid #2a3a5e;
+            border-radius: 10px;
+            padding: 20px 18px;
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+        .auth-card h2 {
+            font-size: 13px; color: #00ffff; margin-bottom: 12px; letter-spacing: 1px; line-height: 1.4;
+        }
+        .auth-card input {
+            padding: 10px; font-size: 16px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; width: 100%; text-align: center; margin-bottom: 10px; letter-spacing: 2px;
+        }
+        .auth-card button, .modal-btn {
+            padding: 10px; font-size: 15px; font-weight: bold; background: #facc15; color: #000; border: none; border-radius: 6px; cursor: pointer; width: 100%;
+        }
+        .modal-btn-row { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-cancel { background: #334155; color: #cbd5e1; }
+        .btn-confirm { background: #991b1b; color: #fecaca; }
+
+        #auth-error, #pwd-error { color: #f87171; font-size: 13px; margin-top: 8px; display: none; }
+        .auth-copyright { font-size: 10px; color: #64748b; margin-top: 12px; border-top: 1px solid #1e293b; padding-top: 8px; }
+
+        header {
+            background: #151c2f;
+            border: 1px solid #2a3a5e;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        h1 { font-size: 14px; color: #00ffff; margin-bottom: 4px; letter-spacing: 1px; }
+        .sub-info { font-size: 11px; color: #8ab4f8; }
+
+        .layer-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .layer-tab {
+            padding: 8px 4px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .layer-tab.active {
+            background: #0284c7;
+            color: #fff;
+            border-color: #38bdf8;
+        }
+        .layer-tab:nth-child(4), .layer-tab:nth-child(5) {
+            grid-column: span 1.5;
+        }
+
+        .control-panel {
+            background: #151c2f;
+            border: 1px solid #2a3a5e;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .row-group { display: flex; gap: 6px; align-items: center; justify-content: space-between; }
+        .row-group label { font-size: 12px; color: #cbd5e1; }
+        .row-group input {
+            background: #0f172a; border: 1px solid #475569; color: #fff; padding: 6px; border-radius: 4px; font-size: 13px; text-align: center;
+        }
+        .btn-jump { background: #0d9488; color: #fff; border: none; padding: 6px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-auto-detect { background: #7c3aed; color: #fff; border: none; padding: 8px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; font-size: 12px; }
+
+        .kp-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 45vh;
+            overflow-y: auto;
+            padding-right: 4px;
+            margin-bottom: 12px;
+        }
+        .kp-card {
+            background: #151c2f;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .kp-info { display: flex; flex-direction: column; gap: 2px; }
+        .kp-title { font-size: 15px; font-weight: 900; color: #facc15; }
+        .kp-status-text { font-size: 10px; color: #94a3b8; }
+        
+        .kp-actions { display: flex; gap: 6px; align-items: center; }
+        
+        .btn-measure {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 11px;
+            border: 2px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .m-step-1 { background: #dc2626; color: #fff; }
+        .m-step-2 { background: #ca8a04; color: #fff; }
+        .m-step-3 { background: #2563eb; color: #fff; }
+        .m-done { background: #16a34a; color: #fff; }
+
+        .btn-undo-single {
+            background: #334155; color: #f87171; border: none; padding: 5px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
+        }
+
+        .data-management {
+            background: #151c2f; border: 1px solid #2a3a5e; border-radius: 8px; padding: 10px; text-align: center;
+        }
+        .data-btn-row { display: flex; gap: 6px; margin-top: 6px; }
+        .btn-data { flex: 1; padding: 8px; font-size: 12px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
+        .btn-export { background: #2563eb; color: #fff; }
+        .btn-reset { background: #991b1b; color: #fecaca; }
+
+        .gps-status-bar {
+            font-size: 11px; padding: 6px; border-radius: 6px; background: #0f172a; margin-bottom: 10px; text-align: center; border: 1px solid #334155;
+        }
+        .status-ok { color: #4ade80; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <!-- パスワード認証画面 -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <h2>N.E.C.O. GPS実測ロガー<br>認証画面</h2>
+            <input type="password" id="pass-input" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter') checkPassword()">
+            <button onclick="checkPassword()">ログイン</button>
+            <div id="auth-error">パスワードが違います</div>
+            <div class="auth-copyright">&copy; 2026 Axis Line Operations</div>
+        </div>
+    </div>
+
+    <!-- リセット用パスワード確認モーダル -->
+    <div id="pwd-modal" style="display: none;">
+        <div class="auth-card">
+            <h2>全データリセット確認</h2>
+            <p style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">すべての計測データを削除するにはパスワードを入力してください</p>
+            <input type="password" id="reset-pwd-input" placeholder="••••" onkeydown="if(event.key==='Enter') confirmResetAllData()">
+            <div id="pwd-error">パスワードが違います</div>
+            <div class="modal-btn-row">
+                <button class="modal-btn btn-cancel" onclick="closeResetModal()">キャンセル</button>
+                <button class="modal-btn btn-confirm" onclick="confirmResetAllData()">削除を実行</button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <h1>N.E.C.O. GPS実測ロガー</h1>
+        <div class="sub-info">0.0km - 55.0km (100m刻み) 3回平均計測システム</div>
+    </header>
+
+    <div class="gps-status-bar" id="gps-status">
+        GPS 測位中... (精度: --m)
+    </div>
+
+    <div class="layer-tabs">
+        <div class="layer-tab active" onclick="setLayer('UP')">上り本線</div>
+        <div class="layer-tab" onclick="setLayer('DOWN')">下り本線</div>
+        <div class="layer-tab" onclick="setLayer('UP_SIDE')">上り側道</div>
+        <div class="layer-tab" onclick="setLayer('DOWN_SIDE')">下り側道</div>
+        <div class="layer-tab" onclick="setLayer('CENTER')" style="grid-column: span 3;">中央分離帯</div>
+    </div>
+
+    <div class="control-panel">
+        <button class="btn-auto-detect" onclick="jumpToCurrentGPS()">現在地のGPS付近を表示</button>
+        <div class="row-group">
+            <label>指定KPへジャンプ:</label>
+            <div style="display:flex; gap:4px;">
+                <input type="number" id="jump-kp-input" value="30.0" step="0.1" min="0" max="55" style="width: 80px;">
+                <span style="font-size:12px; align-self:center;">kp</span>
+                <button class="btn-jump" onclick="jumpToKp()">移動</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="kp-list-container" id="kp-cards-container"></div>
+
+    <div class="data-management">
+        <div style="font-size: 12px; font-weight: bold; color: #cbd5e1;" id="stats-text">計測済みデータ: 0 件</div>
+        <div class="data-btn-row">
+            <button class="btn-data btn-export" onclick="exportDataJson()">計測データをJSON出力</button>
+            <button class="btn-data btn-reset" onclick="promptResetAllData()">全データリセット</button>
+        </div>
+    </div>
+
+    <script>
+        const OBFUSCATED_PASSWORD = "6e6578636f6b70"; // "nexcokp"
+
+        function verifyPassword(input) {
+            let encoded = "";
+            for (let i = 0; i < input.length; i++) {
+                let hex = input.charCodeAt(i).toString(16);
+                if (hex.length < 2) hex = "0" + hex;
+                encoded += hex;
+            }
+            return encoded === OBFUSCATED_PASSWORD;
+        }
+
+        let authenticated = false;
+
+        function checkPassword() {
+            const inputVal = document.getElementById("pass-input").value;
+            if (verifyPassword(inputVal)) {
+                authenticated = true;
+                document.getElementById("auth-overlay").style.display = "none";
+                document.getElementById("auth-error").style.display = "none";
+                initSystem();
+            } else {
+                document.getElementById("auth-error").style.display = "block";
+            }
+        }
+
+        let currentLayer = 'UP';
+        let centerKpIndex = 300;
+        let latestLat = 0;
+        let latestLng = 0;
+        let latestAccuracy = 0;
+
+        function getStoredLogs() {
+            try {
+                const data = localStorage.getItem('neco_gps_logger_data');
+                return data ? JSON.parse(data) : {};
+            } catch(e) { return {}; }
+        }
+
+        function saveStoredLogs(logs) {
+            localStorage.setItem('neco_gps_logger_data', JSON.stringify(logs));
+            updateStats();
+        }
+
+        function setLayer(layer) {
+            currentLayer = layer;
+            document.querySelectorAll('.layer-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            renderKpList();
+        }
+
+        function initSystem() {
+            if (!navigator.geolocation) {
+                alert("位置情報がサポートされていません");
+                return;
+            }
+            navigator.geolocation.watchPosition(
+                (pos) => {
+                    if (!authenticated) return;
+                    latestLat = pos.coords.latitude;
+                    latestLng = pos.coords.longitude;
+                    latestAccuracy = pos.coords.accuracy;
+                    document.getElementById('gps-status').innerHTML = 
+                        `GPS Active: <span class="status-ok">${latestLat.toFixed(5)}, ${latestLng.toFixed(5)}</span> (精度: +/-${Math.round(latestAccuracy)}m)`;
+                },
+                (err) => {
+                    document.getElementById('gps-status').innerHTML = `<span style="color:#f87171;">GPS エラー: ${err.message}</span>`;
+                },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            );
+            renderKpList();
+            updateStats();
+        }
+
+        function jumpToCurrentGPS() {
+            if (latestLat === 0) {
+                alert("まだGPSの位置情報が取得できていません。");
+                return;
+            }
+            let estimatedKp = (latestLat - 35.805) * 111.13;
+            if (estimatedKp < 0) estimatedKp = 0;
+            if (estimatedKp > 55) estimatedKp = 55;
+            
+            centerKpIndex = Math.round(estimatedKp * 10);
+            renderKpList();
+        }
+
+        function jumpToKp() {
+            const val = parseFloat(document.getElementById('jump-kp-input').value);
+            if (!isNaN(val) && val >= 0 && val <= 55) {
+                centerKpIndex = Math.round(val * 10);
+                renderKpList();
+            }
+        }
+
+        function renderKpList() {
+            const container = document.getElementById('kp-cards-container');
+            const logs = getStoredLogs();
+            let html = '';
+
+            let start = Math.max(0, centerKpIndex - 10);
+            let end = Math.min(550, centerKpIndex + 10);
+
+            for (let i = start; i <= end; i++) {
+                let kpVal = (i / 10).toFixed(1);
+                let key = `${currentLayer}_${kpVal}`;
+                let entry = logs[key];
+
+                let count = entry && entry.points ? entry.points.length : 0;
+                let btnClass = "m-step-1";
+                let btnText = "1回";
+                if (count === 1) { btnClass = "m-step-2"; btnText = "2回"; }
+                else if (count === 2) { btnClass = "m-step-3"; btnText = "3回"; }
+                else if (count >= 3) { btnClass = "m-done"; btnText = "完了"; }
+
+                let statusInfo = count === 0 ? "未計測" : (count < 3 ? `計測中 (${count}/3回)` : `平均取得済み`);
+
+                html += `
+                    <div class="kp-card" style="${i === centerKpIndex ? 'border-color: #00ffff;' : ''}">
+                        <div class="kp-info">
+                            <div class="kp-title">${kpVal} kp</div>
+                            <div class="kp-status-text">${statusInfo}</div>
+                        </div>
+                        <div class="kp-actions">
+                            <button class="btn-measure ${btnClass}" onclick="recordPoint('${currentLayer}', '${kpVal}')">${btnText}</button>
+                            ${count > 0 ? `<button class="btn-undo-single" onclick="undoLastPoint('${currentLayer}', '${kpVal}')">1回戻す</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function recordPoint(layer, kpVal) {
+            if (latestLat === 0) {
+                alert("GPS位置がまだ取得できていません。");
+                return;
+            }
+
+            let logs = getStoredLogs();
+            let key = `${layer}_${kpVal}`;
+            if (!logs[key]) {
+                logs[key] = { points: [] };
+            }
+
+            if (logs[key].points.length >= 3) {
+                alert("既に3回計測が完了しています。やり直す場合は「1回戻す」を押してください。");
+                return;
+            }
+
+            logs[key].points.push({ lat: latestLat, lng: latestLng, accuracy: latestAccuracy });
+
+            if (logs[key].points.length === 3) {
+                let sumLat = 0, sumLng = 0;
+                logs[key].points.forEach(p => {
+                    sumLat += p.lat;
+                    sumLng += p.lng;
+                });
+                logs[key].avg = {
+                    lat: sumLat / 3,
+                    lng: sumLng / 3
+                };
+            }
+
+            saveStoredLogs(logs);
+            renderKpList();
+        }
+
+        function undoLastPoint(layer, kpVal) {
+            let logs = getStoredLogs();
+            let key = `${layer}_${kpVal}`;
+            if (logs[key] && logs[key].points && logs[key].points.length > 0) {
+                logs[key].points.pop();
+                delete logs[key].avg;
+                
+                if (logs[key].points.length === 0) {
+                    delete logs[key];
+                }
+                
+                saveStoredLogs(logs);
+                renderKpList();
+            }
+        }
+
+        function updateStats() {
+            let logs = getStoredLogs();
+            let total = Object.keys(logs).filter(k => logs[k].avg).length;
+            document.getElementById('stats-text').innerText = `完全計測済みデータ: ${total} 件`;
+        }
+
+        function exportDataJson() {
+            let logs = getStoredLogs();
+            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs, null, 2));
+            let downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `neco_gps_log_${currentLayer}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function promptResetAllData() {
+            document.getElementById('reset-pwd-input').value = '';
+            document.getElementById('pwd-error').style.display = 'none';
+            document.getElementById('pwd-modal').style.display = 'flex';
+            document.getElementById('reset-pwd-input').focus();
+        }
+
+        function closeResetModal() {
+            document.getElementById('pwd-modal').style.display = 'none';
+        }
+
+        function confirmResetAllData() {
+            const entered = document.getElementById('reset-pwd-input').value;
+            if (verifyPassword(entered)) {
+                localStorage.removeItem('neco_gps_logger_data');
+                renderKpList();
+                updateStats();
+                closeResetModal();
+                alert("すべての計測データをリセットしました。");
+            } else {
+                document.getElementById('pwd-error').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
