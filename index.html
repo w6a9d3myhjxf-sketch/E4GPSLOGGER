@@ -428,9 +428,12 @@
 
         function exportDataJson() {
             let logs = getStoredLogs();
-            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs, null, 2));
+            let dataStr = JSON.stringify(logs, null, 2);
+            let blob = new Blob([dataStr], {type: "application/json"});
+            let url = URL.createObjectURL(blob);
+            
             let downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("href", url);
             downloadAnchor.setAttribute("download", `neco_gps_log_${currentLayer}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
