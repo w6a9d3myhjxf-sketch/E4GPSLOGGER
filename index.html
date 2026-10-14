@@ -66,16 +66,16 @@
         h1 { font-size: 14px; color: #00ffff; margin-bottom: 4px; letter-spacing: 1px; }
         .sub-info { font-size: 11px; color: #8ab4f8; }
 
-        /* メインのモード切替タブ */
+        /* メインのモード切替タブ（3つに分離） */
         .mode-tabs {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
             margin-bottom: 10px;
         }
         .mode-tab {
-            padding: 10px;
-            font-size: 12px;
+            padding: 8px 4px;
+            font-size: 11px;
             font-weight: bold;
             background: #1e293b;
             color: #94a3b8;
@@ -90,7 +90,7 @@
             border-color: #38bdf8;
         }
 
-        /* レイヤー選択タブ（5つ） */
+        /* 東北道用レイヤー選択タブ（5つ） */
         .layer-tabs {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -115,6 +115,30 @@
         }
         .layer-tab:nth-child(4), .layer-tab:nth-child(5) {
             grid-column: span 1.5;
+        }
+
+        /* 首都高用レイヤー選択タブ（2つ：上下線） */
+        .shuto-layer-tabs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .shuto-layer-tab {
+            padding: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .shuto-layer-tab.active {
+            background: #b45309;
+            color: #fff;
+            border-color: #f59e0b;
         }
 
         .control-panel {
@@ -153,16 +177,13 @@
             flex-direction: column;
             gap: 6px;
         }
-        .kp-card.shuto-zone {
-            border-color: #f59e0b;
-            background: #181d2c;
+        .kp-card.shuto-card-style {
+            border-color: #d97706;
+            background: #171c28;
         }
         .kp-top-row { display: flex; justify-content: space-between; align-items: center; }
         .kp-info { display: flex; flex-direction: column; gap: 2px; }
         .kp-title { font-size: 15px; font-weight: 900; color: #facc15; }
-        .kp-badge-shuto {
-            font-size: 9px; background: #b45309; color: #fef3c7; padding: 1px 5px; border-radius: 4px; display: inline-block; width: fit-content; font-weight: bold; margin-top: 2px;
-        }
         .kp-status-text { font-size: 10px; color: #94a3b8; }
         
         .kp-actions { display: flex; gap: 6px; align-items: center; }
@@ -305,27 +326,28 @@
 
     <header>
         <h1>N.E.C.O. 統合データロガー</h1>
-        <div class="sub-info">東北道 ＆ 首都高川口線 (0.0km - 55.0km)</div>
+        <div class="sub-info">東北道 ＆ 首都高川口線 専用タブ分離管理</div>
     </header>
 
     <div class="gps-status-bar" id="gps-status">
         GPS 測位中... (精度: --m)
     </div>
 
-    <!-- メインモード切替タブ -->
+    <!-- メインモード切替タブ（3つ） -->
     <div class="mode-tabs">
-        <div class="mode-tab active" onclick="switchAppMode('KP')">KP 記録ロガー (0-55km)</div>
+        <div class="mode-tab active" onclick="switchAppMode('TOHOKU')">東北道ロガー (0-55kp)</div>
+        <div class="mode-tab" onclick="switchAppMode('SHUTO')">首都高ロガー (6.8-12.3kp)</div>
         <div class="mode-tab" onclick="switchAppMode('BUILDER')">構造物ビルダー</div>
     </div>
 
-    <!-- 【モード1】KPリストパネル -->
-    <div id="panel-kp">
+    <!-- 【モード1】東北道ロガーパネル (0.0kp - 55.0kp) -->
+    <div id="panel-tohoku">
         <div class="layer-tabs">
-            <div class="layer-tab active" onclick="setLayer('UP')">上り本線</div>
-            <div class="layer-tab" onclick="setLayer('DOWN')">下り本線</div>
-            <div class="layer-tab" onclick="setLayer('UP_SIDE')">上り側道</div>
-            <div class="layer-tab" onclick="setLayer('DOWN_SIDE')">下り側道</div>
-            <div class="layer-tab" onclick="setLayer('CENTER')">中央分離帯</div>
+            <div class="layer-tab active" onclick="setTohokuLayer('UP')">上り本線</div>
+            <div class="layer-tab" onclick="setTohokuLayer('DOWN')">下り本線</div>
+            <div class="layer-tab" onclick="setTohokuLayer('UP_SIDE')">上り側道</div>
+            <div class="layer-tab" onclick="setTohokuLayer('DOWN_SIDE')">下り側道</div>
+            <div class="layer-tab" onclick="setTohokuLayer('CENTER')">中央分離帯</div>
         </div>
 
         <div class="control-panel">
@@ -335,15 +357,36 @@
                 <div style="display:flex; gap:4px;">
                     <input type="number" id="jump-kp-input" value="30.0" step="0.1" min="0" max="55" style="width: 80px;">
                     <span style="font-size:12px; align-self:center;">kp</span>
-                    <button class="btn-jump" onclick="jumpToKp()">移動</button>
+                    <button class="btn-jump" onclick="jumpToTohokuKp()">移動</button>
                 </div>
             </div>
         </div>
 
-        <div class="content-area" id="kp-cards-container"></div>
+        <div class="content-area" id="tohoku-cards-container"></div>
     </div>
 
-    <!-- 【モード2】構造物ビルダーパネル -->
+    <!-- 【モード2】首都高川口線ロガーパネル (6.8kp - 12.3kp) -->
+    <div id="panel-shuto" style="display: none;">
+        <div class="shuto-layer-tabs">
+            <div class="shuto-layer-tab active" onclick="setShutoLayer('SHUTO_UP')">首都高 上り本線 (6.8-12.3kp)</div>
+            <div class="shuto-layer-tab" onclick="setShutoLayer('SHUTO_DOWN')">首都高 下り本線 (6.8-12.3kp)</div>
+        </div>
+
+        <div class="control-panel">
+            <div class="row-group">
+                <label>指定首都高KPへジャンプ:</label>
+                <div style="display:flex; gap:4px;">
+                    <input type="number" id="jump-shuto-input" value="10.0" step="0.1" min="6.8" max="12.3" style="width: 80px;">
+                    <span style="font-size:12px; align-self:center;">kp</span>
+                    <button class="btn-jump" onclick="jumpToShutoKp()">移動</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area" id="shuto-cards-container"></div>
+    </div>
+
+    <!-- 【モード3】構造物ビルダーパネル -->
     <div id="panel-builder" style="display: none;">
         <div class="builder-form">
             <h3>インフラ構造物 新規登録 (手入力 ＆ GPS取得)</h3>
@@ -465,8 +508,9 @@
             }
         }
 
-        let currentMode = 'KP';
-        let currentLayer = 'UP';
+        let currentMode = 'TOHOKU';
+        let tohokuLayer = 'UP';
+        let shutoLayer = 'SHUTO_UP';
         let latestLat = 0;
         let latestLng = 0;
         let latestAccuracy = 0;
@@ -502,23 +546,28 @@
             document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
 
-            if (mode === 'KP') {
-                document.getElementById('panel-kp').style.display = 'block';
-                document.getElementById('panel-builder').style.display = 'none';
-                renderKpList();
-            } else {
-                document.getElementById('panel-kp').style.display = 'none';
-                document.getElementById('panel-builder').style.display = 'block';
-                renderStructList();
-            }
+            document.getElementById('panel-tohoku').style.display = (mode === 'TOHOKU') ? 'block' : 'none';
+            document.getElementById('panel-shuto').style.display = (mode === 'SHUTO') ? 'block' : 'none';
+            document.getElementById('panel-builder').style.display = (mode === 'BUILDER') ? 'block' : 'none';
+
+            if (mode === 'TOHOKU') renderTohokuList();
+            if (mode === 'SHUTO') renderShutoList();
+            if (mode === 'BUILDER') renderStructList();
             updateStats();
         }
 
-        function setLayer(layer) {
-            currentLayer = layer;
-            document.querySelectorAll('.layer-tab').forEach(tab => tab.classList.remove('active'));
+        function setTohokuLayer(layer) {
+            tohokuLayer = layer;
+            document.querySelectorAll('#panel-tohoku .layer-tab').forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
-            renderKpList();
+            renderTohokuList();
+        }
+
+        function setShutoLayer(layer) {
+            shutoLayer = layer;
+            document.querySelectorAll('.shuto-layer-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            renderShutoList();
         }
 
         function initSystem() {
@@ -540,7 +589,8 @@
                 },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
-            renderKpList();
+            renderTohokuList();
+            renderShutoList();
             renderStructList();
             updateStats();
         }
@@ -553,20 +603,20 @@
             let estimatedKp = (latestLat - 35.805) * 111.13;
             if (estimatedKp < 0) estimatedKp = 0;
             if (estimatedKp > 55) estimatedKp = 55;
-            scrollToKp(Math.round(estimatedKp * 10));
+            scrollToTohokuKp(Math.round(estimatedKp * 10));
         }
 
-        function jumpToKp() {
+        function jumpToTohokuKp() {
             const val = parseFloat(document.getElementById('jump-kp-input').value);
             if (!isNaN(val) && val >= 0 && val <= 55) {
-                scrollToKp(Math.round(val * 10));
+                scrollToTohokuKp(Math.round(val * 10));
             } else {
                 alert("0.0 〜 55.0 の範囲で入力してください。");
             }
         }
 
-        function scrollToKp(index) {
-            const cardEl = document.getElementById(`kp-card-${index}`);
+        function scrollToTohokuKp(index) {
+            const cardEl = document.getElementById(`tohoku-card-${index}`);
             if (cardEl) {
                 cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 cardEl.style.borderColor = '#00ffff';
@@ -574,20 +624,32 @@
             }
         }
 
-        function renderKpList() {
-            const container = document.getElementById('kp-cards-container');
+        function jumpToShutoKp() {
+            const val = parseFloat(document.getElementById('jump-shuto-input').value);
+            if (!isNaN(val) && val >= 6.8 && val <= 12.3) {
+                scrollToShutoKp(Math.round(val * 10));
+            } else {
+                alert("6.8 〜 12.3 の範囲で入力してください。");
+            }
+        }
+
+        function scrollToShutoKp(index) {
+            const cardEl = document.getElementById(`shuto-card-${index}`);
+            if (cardEl) {
+                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                cardEl.style.borderColor = '#00ffff';
+                setTimeout(() => { cardEl.style.borderColor = '#334155'; }, 2000);
+            }
+        }
+
+        function renderTohokuList() {
+            const container = document.getElementById('tohoku-cards-container');
             const data = getStoredData();
             let html = '';
 
             for (let i = 0; i <= 550; i++) {
                 let kpVal = (i / 10).toFixed(1);
-                let valNum = parseFloat(kpVal);
-                
-                let isShutoZone = (valNum >= 6.8 && valNum <= 12.3) && (currentLayer === 'UP' || currentLayer === 'DOWN');
-                let cardClass = isShutoZone ? "kp-card shuto-zone" : "kp-card";
-                let badgeHtml = isShutoZone ? `<div class="kp-badge-shuto">首都高川口線区間</div>` : ``;
-
-                let key = `${currentLayer}_${kpVal}`;
+                let key = `${tohokuLayer}_${kpVal}`;
                 let entry = data.kpLogs[key];
 
                 let count = entry && entry.points ? entry.points.length : 0;
@@ -604,23 +666,22 @@
                 let lngVal = hasAvg ? entry.avg.lng : '';
 
                 html += `
-                    <div class="${cardClass}" id="kp-card-${i}">
+                    <div class="kp-card" id="tohoku-card-${i}">
                         <div class="kp-top-row">
                             <div class="kp-info">
-                                <div class="kp-title">${kpVal} kp</div>
-                                ${badgeHtml}
-                                <div class="kp-status-text" id="status-text-${currentLayer}-${kpVal}">${statusInfo}</div>
+                                <div class="kp-title">${kpVal} kp (東北道)</div>
+                                <div class="kp-status-text" id="tohoku-status-${tohokuLayer}-${kpVal}">${statusInfo}</div>
                             </div>
                             <div class="kp-actions">
-                                <button class="btn-measure ${btnClass}" onclick="recordPoint('${currentLayer}', '${kpVal}')">${btnText}</button>
-                                ${count > 0 ? `<button class="btn-undo-single" onclick="undoLastPoint('${currentLayer}', '${kpVal}')">1回戻す</button>` : ''}
+                                <button class="btn-measure ${btnClass}" onclick="recordTohokuPoint('${tohokuLayer}', '${kpVal}')">${btnText}</button>
+                                ${count > 0 ? `<button class="btn-undo-single" onclick="undoTohokuPoint('${tohokuLayer}', '${kpVal}')">1回戻す</button>` : ''}
                             </div>
                         </div>
                         <div class="manual-coord-box">
-                            <input type="number" id="lat-${currentLayer}-${kpVal}" placeholder="緯度 (N)" value="${latVal}" step="0.00001">
-                            <input type="number" id="lng-${currentLayer}-${kpVal}" placeholder="経度 (E)" value="${lngVal}" step="0.00001">
-                            <button class="btn-gps-get" onclick="grabKpGps('${currentLayer}', '${kpVal}')">現在地GPS</button>
-                            <button class="btn-manual-save" onclick="saveKpManual('${currentLayer}', '${kpVal}')">保存</button>
+                            <input type="number" id="tohoku-lat-${tohokuLayer}-${kpVal}" placeholder="緯度 (N)" value="${latVal}" step="0.00001">
+                            <input type="number" id="tohoku-lng-${tohokuLayer}-${kpVal}" placeholder="経度 (E)" value="${lngVal}" step="0.00001">
+                            <button class="btn-gps-get" onclick="grabTohokuGps('${tohokuLayer}', '${kpVal}')">現在地GPS</button>
+                            <button class="btn-manual-save" onclick="saveTohokuManual('${tohokuLayer}', '${kpVal}')">保存</button>
                         </div>
                     </div>
                 `;
@@ -628,7 +689,45 @@
             container.innerHTML = html;
         }
 
-        function recordPoint(layer, kpVal) {
+        function renderShutoList() {
+            const container = document.getElementById('shuto-cards-container');
+            const data = getStoredData();
+            let html = '';
+
+            // 6.8kp (68) から 12.3kp (123) まで
+            for (let i = 68; i <= 123; i++) {
+                let kpVal = (i / 10).toFixed(1);
+                let key = `${shutoLayer}_${kpVal}`;
+                let entry = data.kpLogs[key];
+
+                let hasAvg = entry && entry.avg;
+                let latVal = hasAvg ? entry.avg.lat : '';
+                let lngVal = hasAvg ? entry.avg.lng : '';
+                let statusText = hasAvg ? "登録済み" : "未登録";
+
+                let layerNameLabel = (shutoLayer === 'SHUTO_UP') ? '首都高 上り本線' : '首都高 下り本線';
+
+                html += `
+                    <div class="kp-card shuto-card-style" id="shuto-card-${i}">
+                        <div class="kp-top-row">
+                            <div class="kp-info">
+                                <div class="kp-title">${kpVal} kp [${layerNameLabel}]</div>
+                                <div class="kp-status-text" id="shuto-status-${shutoLayer}-${kpVal}">${statusText}</div>
+                            </div>
+                        </div>
+                        <div class="manual-coord-box">
+                            <input type="number" id="shuto-lat-${shutoLayer}-${kpVal}" placeholder="緯度 (N)" value="${latVal}" step="0.00001">
+                            <input type="number" id="shuto-lng-${shutoLayer}-${kpVal}" placeholder="経度 (E)" value="${lngVal}" step="0.00001">
+                            <button class="btn-gps-get" onclick="grabShutoGps('${shutoLayer}', '${kpVal}')">現在地GPS</button>
+                            <button class="btn-manual-save" onclick="saveShutoManual('${shutoLayer}', '${kpVal}')">保存</button>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function recordTohokuPoint(layer, kpVal) {
             if (latestLat === 0) {
                 alert("GPS位置がまだ取得できていません。");
                 return;
@@ -654,19 +753,19 @@
             }
 
             saveStoredData(data);
-            renderKpList();
+            renderTohokuList();
         }
 
-        function grabKpGps(layer, kpVal) {
+        function grabTohokuGps(layer, kpVal) {
             if (latestLat === 0) {
                 alert("GPS位置がまだ取得できていません。");
                 return;
             }
-            document.getElementById(`lat-${layer}-${kpVal}`).value = latestLat.toFixed(6);
-            document.getElementById(`lng-${layer}-${kpVal}`).value = latestLng.toFixed(6);
+            document.getElementById(`tohoku-lat-${layer}-${kpVal}`).value = latestLat.toFixed(6);
+            document.getElementById(`tohoku-lng-${layer}-${kpVal}`).value = latestLng.toFixed(6);
         }
 
-        function undoLastPoint(layer, kpVal) {
+        function undoTohokuPoint(layer, kpVal) {
             let data = getStoredData();
             let key = `${layer}_${kpVal}`;
             if (data.kpLogs[key] && data.kpLogs[key].points && data.kpLogs[key].points.length > 0) {
@@ -674,13 +773,13 @@
                 delete data.kpLogs[key].avg;
                 if (data.kpLogs[key].points.length === 0) delete data.kpLogs[key];
                 saveStoredData(data);
-                renderKpList();
+                renderTohokuList();
             }
         }
 
-        function saveKpManual(layer, kpVal) {
-            let latInput = document.getElementById(`lat-${layer}-${kpVal}`).value;
-            let lngInput = document.getElementById(`lng-${layer}-${kpVal}`).value;
+        function saveTohokuManual(layer, kpVal) {
+            let latInput = document.getElementById(`tohoku-lat-${layer}-${kpVal}`).value;
+            let lngInput = document.getElementById(`tohoku-lng-${layer}-${kpVal}`).value;
 
             if (!latInput || !lngInput) {
                 alert("緯度(N)と経度(E)の両方を入力してください。");
@@ -701,8 +800,44 @@
             };
 
             saveStoredData(data);
-            renderKpList();
-            alert(`${kpVal}kp (${layer}) の座標を保存しました！`);
+            renderTohokuList();
+            alert(`東北道 ${kpVal}kp (${layer}) の座標を保存しました！`);
+        }
+
+        function grabShutoGps(layer, kpVal) {
+            if (latestLat === 0) {
+                alert("GPS位置がまだ取得できていません。");
+                return;
+            }
+            document.getElementById(`shuto-lat-${layer}-${kpVal}`).value = latestLat.toFixed(6);
+            document.getElementById(`shuto-lng-${layer}-${kpVal}`).value = latestLng.toFixed(6);
+        }
+
+        function saveShutoManual(layer, kpVal) {
+            let latInput = document.getElementById(`shuto-lat-${layer}-${kpVal}`).value;
+            let lngInput = document.getElementById(`shuto-lng-${layer}-${kpVal}`).value;
+
+            if (!latInput || !lngInput) {
+                alert("緯度(N)と経度(E)の両方を入力してください。");
+                return;
+            }
+
+            let data = getStoredData();
+            let key = `${layer}_${kpVal}`;
+            
+            data.kpLogs[key] = {
+                points: [
+                    { lat: parseFloat(latInput), lng: parseFloat(lngInput), accuracy: 1 }
+                ],
+                avg: {
+                    lat: parseFloat(latInput),
+                    lng: parseFloat(lngInput)
+                }
+            };
+
+            saveStoredData(data);
+            renderShutoList();
+            alert(`首都高 ${kpVal}kp (${layer}) の座標を保存しました！`);
         }
 
         function onCategoryChange() {
@@ -835,7 +970,7 @@
             document.getElementById('reset-pwd-input').value = '';
             document.getElementById('pwd-error').style.display = 'none';
             document.getElementById('pwd-modal').style.display = 'flex';
-            document.getElementById('reset-pwd-input').focus();
+            document.getElementById('reset-pwd-input'].focus();
         }
 
         function closeResetModal() {
@@ -846,7 +981,8 @@
             const entered = document.getElementById('reset-pwd-input').value;
             if (verifyPassword(entered)) {
                 localStorage.removeItem('neco_integrated_master_data');
-                renderKpList();
+                renderTohokuList();
+                renderShutoList();
                 renderStructList();
                 updateStats();
                 closeResetModal();
