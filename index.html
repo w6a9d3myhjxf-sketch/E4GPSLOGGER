@@ -66,7 +66,7 @@
         h1 { font-size: 14px; color: #00ffff; margin-bottom: 4px; letter-spacing: 1px; }
         .sub-info { font-size: 11px; color: #8ab4f8; }
 
-        /* メインのモード切替タブ（3つに分離） */
+        /* メインのモード切替タブ（3つ） */
         .mode-tabs {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -694,7 +694,6 @@
             const data = getStoredData();
             let html = '';
 
-            // 6.8kp (68) から 12.3kp (123) まで
             for (let i = 68; i <= 123; i++) {
                 let kpVal = (i / 10).toFixed(1);
                 let key = `${shutoLayer}_${kpVal}`;
@@ -970,7 +969,7 @@
             document.getElementById('reset-pwd-input').value = '';
             document.getElementById('pwd-error').style.display = 'none';
             document.getElementById('pwd-modal').style.display = 'flex';
-            document.getElementById('reset-pwd-input'].focus();
+            document.getElementById('reset-pwd-input').focus();
         }
 
         function closeResetModal() {
