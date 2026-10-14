@@ -153,9 +153,16 @@
             flex-direction: column;
             gap: 6px;
         }
+        .kp-card.shuto-zone {
+            border-color: #f59e0b;
+            background: #181d2c;
+        }
         .kp-top-row { display: flex; justify-content: space-between; align-items: center; }
         .kp-info { display: flex; flex-direction: column; gap: 2px; }
         .kp-title { font-size: 15px; font-weight: 900; color: #facc15; }
+        .kp-badge-shuto {
+            font-size: 9px; background: #b45309; color: #fef3c7; padding: 1px 5px; border-radius: 4px; display: inline-block; width: fit-content; font-weight: bold; margin-top: 2px;
+        }
         .kp-status-text { font-size: 10px; color: #94a3b8; }
         
         .kp-actions { display: flex; gap: 6px; align-items: center; }
@@ -181,10 +188,9 @@
             background: #334155; color: #f87171; border: none; padding: 5px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
         }
 
-        /* 座標確認・手入力用グリッド（折りたたみ式または常時表示） */
         .manual-coord-box {
             display: grid;
-            grid-template-columns: 1fr 1fr auto;
+            grid-template-columns: 1fr 1fr auto auto;
             gap: 4px;
             align-items: center;
             background: #0f172a;
@@ -193,10 +199,13 @@
             border: 1px solid #1e293b;
         }
         .manual-coord-box input {
-            background: #151c2f; border: 1px solid #475569; color: #fff; padding: 4px; border-radius: 4px; font-size: 11px; text-align: center;
+            background: #151c2f; border: 1px solid #475569; color: #fff; padding: 4px; border-radius: 4px; font-size: 11px; text-align: center; width: 100%;
+        }
+        .btn-gps-get {
+            background: #7c3aed; color: #fff; border: none; padding: 5px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; white-space: nowrap;
         }
         .btn-manual-save {
-            background: #0d9488; color: #fff; border: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;
+            background: #0d9488; color: #fff; border: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;
         }
 
         /* 構造物登録フォームのスタイル */
@@ -217,7 +226,8 @@
             background: #0f172a; border: 1px solid #475569; color: #fff; padding: 8px; border-radius: 6px; font-size: 13px;
         }
         .struct-coord-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: 75px 1fr 1fr auto;
             gap: 4px;
             align-items: center;
             background: #0f172a;
@@ -225,9 +235,12 @@
             border-radius: 4px;
             margin-top: 2px;
         }
-        .struct-coord-row span { font-size: 10px; color: #94a3b8; width: 75px; flex-shrink: 0; }
+        .struct-coord-row span { font-size: 10px; color: #94a3b8; }
         .struct-coord-row input {
             background: #151c2f; border: 1px solid #475569; color: #fff; padding: 4px; border-radius: 4px; font-size: 11px; text-align: center; width: 100%;
+        }
+        .btn-struct-gps {
+            background: #7c3aed; color: #fff; border: none; padding: 5px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; white-space: nowrap;
         }
 
         .btn-save-struct {
@@ -292,7 +305,7 @@
 
     <header>
         <h1>N.E.C.O. 統合データロガー</h1>
-        <div class="sub-info">0.0km - 55.0km (全KPスクロールリスト)</div>
+        <div class="sub-info">東北道 ＆ 首都高川口線 (0.0km - 55.0km)</div>
     </header>
 
     <div class="gps-status-bar" id="gps-status">
@@ -333,7 +346,7 @@
     <!-- 【モード2】構造物ビルダーパネル -->
     <div id="panel-builder" style="display: none;">
         <div class="builder-form">
-            <h3>インフラ構造物 新規登録 (手入力)</h3>
+            <h3>インフラ構造物 新規登録 (手入力 ＆ GPS取得)</h3>
             <div class="form-row">
                 <label>カテゴリ:</label>
                 <select id="struct-category" onchange="onCategoryChange()">
@@ -343,13 +356,15 @@
                     <option value="カルバート">カルバート</option>
                     <option value="河川">河川</option>
                     <option value="門型">門型</option>
+                    <option value="料金所">料金所</option>
                 </select>
             </div>
             <div class="form-row">
                 <label>名称 (自由入力):</label>
-                <input type="text" id="struct-name" placeholder="例: 新郷跨道橋 / 第1カルバート">
+                <input type="text" id="struct-name" placeholder="例: 新郷本線料金所 / 新郷跨道橋">
             </div>
 
+            <!-- 属性: 防音壁 -->
             <div id="attr-wall" class="form-row">
                 <label>防音壁の高さ:</label>
                 <select id="attr-wall-height">
@@ -357,6 +372,7 @@
                     <option value="低">低い防音壁</option>
                 </select>
             </div>
+            <!-- 属性: 橋梁 -->
             <div id="attr-bridge" class="form-row" style="display:none;">
                 <label>中央分離帯開口部:</label>
                 <select id="attr-bridge-opening">
@@ -369,28 +385,41 @@
                     <option value="有">有 (分離構造・風/落下注意)</option>
                 </select>
             </div>
+            <!-- 属性: 料金所 -->
+            <div id="attr-toll" class="form-row" style="display:none;">
+                <label>料金所種別・形態:</label>
+                <select id="attr-toll-type">
+                    <option value="本線料金所(TB)">本線料金所 (TB)</option>
+                    <option value="インターチェンジ料金所(IC/入口・出口)">IC料金所 (入口・出口ブース)</option>
+                    <option value="JCT料金所">JCT料金所</option>
+                </select>
+            </div>
 
-            <div style="font-size: 11px; color: #38bdf8; margin-top: 4px; font-weight: bold;">位置情報リンク（緯度N・経度Eを手入力）</div>
+            <div style="font-size: 11px; color: #38bdf8; margin-top: 4px; font-weight: bold;">位置情報リンク（手入力 ＆ GPSワンタッチ取得）</div>
             
             <div class="struct-coord-row">
                 <span>上り開始(北)</span>
                 <input type="number" id="in_up_start_lat" placeholder="緯度 (N)" step="0.00001">
                 <input type="number" id="in_up_start_lng" placeholder="経度 (E)" step="0.00001">
+                <button class="btn-struct-gps" onclick="grabStructGps('in_up_start')">GPS</button>
             </div>
             <div class="struct-coord-row">
                 <span>上り終了(南)</span>
                 <input type="number" id="in_up_end_lat" placeholder="緯度 (N)" step="0.00001">
                 <input type="number" id="in_up_end_lng" placeholder="経度 (E)" step="0.00001">
+                <button class="btn-struct-gps" onclick="grabStructGps('in_up_end')">GPS</button>
             </div>
             <div class="struct-coord-row">
                 <span>下り開始(南)</span>
                 <input type="number" id="in_down_start_lat" placeholder="緯度 (N)" step="0.00001">
                 <input type="number" id="in_down_start_lng" placeholder="経度 (E)" step="0.00001">
+                <button class="btn-struct-gps" onclick="grabStructGps('in_down_start')">GPS</button>
             </div>
             <div class="struct-coord-row">
                 <span>下り終了(北)</span>
                 <input type="number" id="in_down_end_lat" placeholder="緯度 (N)" step="0.00001">
                 <input type="number" id="in_down_end_lng" placeholder="経度 (E)" step="0.00001">
+                <button class="btn-struct-gps" onclick="grabStructGps('in_down_end')">GPS</button>
             </div>
 
             <button class="btn-save-struct" onclick="saveStructureManual()">構造物を保存する</button>
@@ -550,9 +579,15 @@
             const data = getStoredData();
             let html = '';
 
-            // 0.0kp (0) から 55.0kp (550) までスクロールリスト生成
             for (let i = 0; i <= 550; i++) {
                 let kpVal = (i / 10).toFixed(1);
+                let valNum = parseFloat(kpVal);
+                
+                // 6.8kp 〜 12.3kp の本線上り・下りは首都高区間としてハイライト ＆ 「首都高」表示
+                let isShutoZone = (valNum >= 6.8 && valNum <= 12.3) && (currentLayer === 'UP' || currentLayer === 'DOWN');
+                let cardClass = isShutoZone ? "kp-card shuto-zone" : "kp-card";
+                let badgeHtml = isShutoZone ? `<div class="kp-badge-shuto">首都高川口線区間</div>` : ``;
+
                 let key = `${currentLayer}_${kpVal}`;
                 let entry = data.kpLogs[key];
 
@@ -570,10 +605,11 @@
                 let lngVal = hasAvg ? entry.avg.lng : '';
 
                 html += `
-                    <div class="kp-card" id="kp-card-${i}">
+                    <div class="${cardClass}" id="kp-card-${i}">
                         <div class="kp-top-row">
                             <div class="kp-info">
                                 <div class="kp-title">${kpVal} kp</div>
+                                ${badgeHtml}
                                 <div class="kp-status-text" id="status-text-${currentLayer}-${kpVal}">${statusInfo}</div>
                             </div>
                             <div class="kp-actions">
@@ -584,7 +620,8 @@
                         <div class="manual-coord-box">
                             <input type="number" id="lat-${currentLayer}-${kpVal}" placeholder="緯度 (N)" value="${latVal}" step="0.00001">
                             <input type="number" id="lng-${currentLayer}-${kpVal}" placeholder="経度 (E)" value="${lngVal}" step="0.00001">
-                            <button class="btn-manual-save" onclick="saveKpManual('${currentLayer}', '${kpVal}')">手入力保存</button>
+                            <button class="btn-gps-get" onclick="grabKpGps('${currentLayer}', '${kpVal}')">現在地GPS</button>
+                            <button class="btn-manual-save" onclick="saveKpManual('${currentLayer}', '${kpVal}')">保存</button>
                         </div>
                     </div>
                 `;
@@ -594,7 +631,7 @@
 
         function recordPoint(layer, kpVal) {
             if (latestLat === 0) {
-                alert("GPS位置がまだ取得できていません。手入力で保存することも可能です。");
+                alert("GPS位置がまだ取得できていません。");
                 return;
             }
 
@@ -619,6 +656,15 @@
 
             saveStoredData(data);
             renderKpList();
+        }
+
+        function grabKpGps(layer, kpVal) {
+            if (latestLat === 0) {
+                alert("GPS位置がまだ取得できていません。");
+                return;
+            }
+            document.getElementById(`lat-${layer}-${kpVal}`).value = latestLat.toFixed(6);
+            document.getElementById(`lng-${layer}-${kpVal}`).value = latestLng.toFixed(6);
         }
 
         function undoLastPoint(layer, kpVal) {
@@ -657,13 +703,23 @@
 
             saveStoredData(data);
             renderKpList();
-            alert(`${kpVal}kp (${layer}) の座標を手入力保存しました！`);
+            alert(`${kpVal}kp (${layer}) の座標を保存しました！`);
         }
 
         function onCategoryChange() {
             const cat = document.getElementById('struct-category').value;
             document.getElementById('attr-wall').style.display = (cat === '防音壁') ? 'flex' : 'none';
             document.getElementById('attr-bridge').style.display = (cat === '橋梁') ? 'flex' : 'none';
+            document.getElementById('attr-toll').style.display = (cat === '料金所') ? 'flex' : 'none';
+        }
+
+        function grabStructGps(prefix) {
+            if (latestLat === 0) {
+                alert("GPS位置がまだ取得できていません。");
+                return;
+            }
+            document.getElementById(prefix + '_lat').value = latestLat.toFixed(6);
+            document.getElementById(prefix + '_lng').value = latestLng.toFixed(6);
         }
 
         function saveStructureManual() {
@@ -680,6 +736,8 @@
             } else if (cat === '橋梁') {
                 attrs.opening = document.getElementById('attr-bridge-opening').value;
                 attrs.gap = document.getElementById('attr-bridge-gap').value;
+            } else if (cat === '料金所') {
+                attrs.tollType = document.getElementById('attr-toll-type').value;
             }
 
             let coords = {
@@ -741,6 +799,7 @@
                 let attrStr = '';
                 if (s.category === '防音壁') attrStr = `[高さ: ${s.attributes.height}]`;
                 if (s.category === '橋梁') attrStr = `[分離帯開口: ${s.attributes.opening} / 床板隙間: ${s.attributes.gap}]`;
+                if (s.category === '料金所') attrStr = `[種別: ${s.attributes.tollType}]`;
 
                 html += `
                     <div class="struct-card">
@@ -762,7 +821,7 @@
             document.getElementById('stats-text').innerText = `KP登録完了: ${kpTotal}件 / 構造物登録: ${structTotal}件`;
         }
 
-        function exportDataJson() {
+        export function exportDataJson() { // Safe guard syntax wrapper or standard function
             let data = getStoredData();
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             let downloadAnchor = document.createElement('a');
