@@ -583,7 +583,6 @@
                 let kpVal = (i / 10).toFixed(1);
                 let valNum = parseFloat(kpVal);
                 
-                // 6.8kp 〜 12.3kp の本線上り・下りは首都高区間としてハイライト ＆ 「首都高」表示
                 let isShutoZone = (valNum >= 6.8 && valNum <= 12.3) && (currentLayer === 'UP' || currentLayer === 'DOWN');
                 let cardClass = isShutoZone ? "kp-card shuto-zone" : "kp-card";
                 let badgeHtml = isShutoZone ? `<div class="kp-badge-shuto">首都高川口線区間</div>` : ``;
@@ -821,7 +820,7 @@
             document.getElementById('stats-text').innerText = `KP登録完了: ${kpTotal}件 / 構造物登録: ${structTotal}件`;
         }
 
-        export function exportDataJson() { // Safe guard syntax wrapper or standard function
+        function exportDataJson() {
             let data = getStoredData();
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             let downloadAnchor = document.createElement('a');
