@@ -53,7 +53,8 @@
         .btn-confirm { background: #991b1b; color: #fecaca; }
 
         #auth-error, #pwd-error { color: #f87171; font-size: 13px; margin-top: 8px; display: none; }
-        .auth-copyright { font-size: 10px; color: #64748b; margin-top: 12px; border-top: 1px solid #1e293b; padding-top: 8px; }
+        .auth-version { font-size: 11px; color: #38bdf8; margin-top: 8px; font-weight: bold; }
+        .auth-copyright { font-size: 10px; color: #64748b; margin-top: 8px; border-top: 1px solid #1e293b; padding-top: 6px; }
 
         header {
             background: #151c2f;
@@ -303,9 +304,10 @@
     <div id="auth-overlay">
         <div class="auth-card">
             <h2>N.E.C.O. 認証画面<br>統合データロガー</h2>
-            <input type="password" id="pass-input" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter') checkPassword()">
+            <input type="password" id="pass-input" placeholder="パスワードを入力" inputmode="latin" autocapitalize="none" autocomplete="current-password" onkeydown="if(event.key==='Enter') checkPassword()">
             <button onclick="checkPassword()">ログイン</button>
             <div id="auth-error">パスワードが違います</div>
+            <div class="auth-version">Version 2.5.0 (Integrated Production)</div>
             <div class="auth-copyright">&copy; 2026 Axis Line Operations</div>
         </div>
     </div>
@@ -315,7 +317,7 @@
         <div class="auth-card">
             <h2>全データリセット確認</h2>
             <p style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">すべてのデータを削除するにはパスワードを入力してください</p>
-            <input type="password" id="reset-pwd-input" placeholder="••••" onkeydown="if(event.key==='Enter') confirmResetAllData()">
+            <input type="password" id="reset-pwd-input" placeholder="••••" inputmode="latin" autocapitalize="none" onkeydown="if(event.key==='Enter') confirmResetAllData()">
             <div id="pwd-error">パスワードが違います</div>
             <div class="modal-btn-row">
                 <button class="modal-btn btn-cancel" onclick="closeResetModal()">キャンセル</button>
