@@ -18,7 +18,7 @@
         }
 
         /* パスワード認証オーバーレイ */
-        #auth-overlay, #pwd-modal {
+        #auth-overlay, #pwd-modal, #json-modal {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(11, 15, 25, 0.95);
@@ -67,7 +67,6 @@
         h1 { font-size: 14px; color: #00ffff; margin-bottom: 4px; letter-spacing: 1px; }
         .sub-info { font-size: 11px; color: #8ab4f8; }
 
-        /* メインのモード切替タブ（3つ） */
         .mode-tabs {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -91,7 +90,6 @@
             border-color: #38bdf8;
         }
 
-        /* 東北道用レイヤー選択タブ（5つ） */
         .layer-tabs {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -118,7 +116,6 @@
             grid-column: span 1.5;
         }
 
-        /* 首都高用レイヤー選択タブ（2つ：上下線） */
         .shuto-layer-tabs {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -230,7 +227,6 @@
             background: #0d9488; color: #fff; border: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;
         }
 
-        /* 構造物登録フォームのスタイル */
         .builder-form {
             background: #151c2f;
             border: 1px solid #2a3a5e;
@@ -261,6 +257,9 @@
         .struct-coord-row input {
             background: #151c2f; border: 1px solid #475569; color: #fff; padding: 4px; border-radius: 4px; font-size: 11px; text-align: center; width: 100%;
         }
+        .struct-coord-row input:disabled {
+            background: #1e293b; color: #475569;
+        }
         .btn-struct-gps {
             background: #7c3aed; color: #fff; border: none; padding: 5px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; white-space: nowrap;
         }
@@ -287,13 +286,14 @@
         .data-management {
             background: #151c2f; border: 1px solid #2a3a5e; border-radius: 8px; padding: 10px; text-align: center;
         }
-        .data-btn-row { display: flex; gap: 6px; margin-top: 6px; }
-        .btn-data { flex: 1; padding: 8px; font-size: 12px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
+        .data-btn-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
+        .btn-data { padding: 8px 4px; font-size: 11px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
         .btn-export { background: #2563eb; color: #fff; }
+        .btn-view { background: #0d9488; color: #fff; }
         .btn-reset { background: #991b1b; color: #fecaca; }
 
         .gps-status-bar {
-            font-size: 11px; padding: 6px; border-radius: 6px; background: #0f172a; margin-bottom: 10px; text-align: center; border: 1px solid #334155;
+            font-size: 11px; padding: 8px; border-radius: 6px; background: #0f172a; margin-bottom: 10px; text-align: center; border: 1px solid #334155;
         }
         .status-ok { color: #4ade80; font-weight: bold; }
     </style>
@@ -307,7 +307,7 @@
             <input type="password" id="pass-input" placeholder="パスワードを入力" inputmode="latin" autocapitalize="none" autocomplete="current-password" onkeydown="if(event.key==='Enter') checkPassword()">
             <button onclick="checkPassword()">ログイン</button>
             <div id="auth-error">パスワードが違います</div>
-            <div class="auth-version">Version 2.5.0 (Integrated Production)</div>
+            <div class="auth-version">Version 2.7.1 (JSON Fix Edition)</div>
             <div class="auth-copyright">&copy; 2026 Axis Line Operations</div>
         </div>
     </div>
@@ -322,6 +322,18 @@
             <div class="modal-btn-row">
                 <button class="modal-btn btn-cancel" onclick="closeResetModal()">キャンセル</button>
                 <button class="modal-btn btn-confirm" onclick="confirmResetAllData()">削除を実行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSON表示モーダル -->
+    <div id="json-modal" style="display: none;">
+        <div class="auth-card" style="max-width: 500px; width: 95%;">
+            <h2>JSONデータ確認</h2>
+            <textarea id="json-textarea" style="width: 100%; height: 250px; background: #0f172a; color: #38bdf8; font-family: monospace; font-size: 11px; padding: 8px; border: 1px solid #475569; border-radius: 4px; resize: none;" readonly></textarea>
+            <div class="modal-btn-row">
+                <button class="modal-btn btn-cancel" onclick="closeJsonModal()">閉じる</button>
+                <button class="modal-btn" style="background: #2563eb; color: #fff;" onclick="copyJsonText()">クリップボードにコピー</button>
             </div>
         </div>
     </div>
@@ -405,8 +417,18 @@
                 </select>
             </div>
             <div class="form-row">
-                <label>名称 (自由入力):</label>
-                <input type="text" id="struct-name" placeholder="例: 新郷本線料金所 / 新郷跨道橋">
+                <label>名称 (識別用の名前):</label>
+                <input type="text" id="struct-name" placeholder="例: 新郷下り防音壁 / 川口JCT料金所">
+            </div>
+
+            <!-- 車線指定オプション -->
+            <div class="form-row">
+                <label>設置車線方向:</label>
+                <select id="struct-direction" onchange="onDirectionChange()">
+                    <option value="DOWN">下り線のみ設置</option>
+                    <option value="UP">上り線のみ設置</option>
+                    <option value="BOTH">上下線両方に設置</option>
+                </select>
             </div>
 
             <!-- 属性: 防音壁 -->
@@ -440,27 +462,27 @@
                 </select>
             </div>
 
-            <div style="font-size: 11px; color: #38bdf8; margin-top: 4px; font-weight: bold;">位置情報リンク（手入力 ＆ GPSワンタッチ取得）</div>
+            <div style="font-size: 11px; color: #38bdf8; margin-top: 4px; font-weight: bold;">位置情報（選択した車線に入力）</div>
             
-            <div class="struct-coord-row">
+            <div class="struct-coord-row" id="row_up_start">
                 <span>上り開始(北)</span>
-                <input type="number" id="in_up_start_lat" placeholder="緯度 (N)" step="0.00001">
-                <input type="number" id="in_up_start_lng" placeholder="経度 (E)" step="0.00001">
+                <input type="number" id="in_up_start_lat" placeholder="緯度 (N)" step="0.00001" disabled>
+                <input type="number" id="in_up_start_lng" placeholder="経度 (E)" step="0.00001" disabled>
                 <button class="btn-struct-gps" onclick="grabStructGps('in_up_start')">GPS</button>
             </div>
-            <div class="struct-coord-row">
+            <div class="struct-coord-row" id="row_up_end">
                 <span>上り終了(南)</span>
-                <input type="number" id="in_up_end_lat" placeholder="緯度 (N)" step="0.00001">
-                <input type="number" id="in_up_end_lng" placeholder="経度 (E)" step="0.00001">
+                <input type="number" id="in_up_end_lat" placeholder="緯度 (N)" step="0.00001" disabled>
+                <input type="number" id="in_up_end_lng" placeholder="経度 (E)" step="0.00001" disabled>
                 <button class="btn-struct-gps" onclick="grabStructGps('in_up_end')">GPS</button>
             </div>
-            <div class="struct-coord-row">
+            <div class="struct-coord-row" id="row_down_start">
                 <span>下り開始(南)</span>
                 <input type="number" id="in_down_start_lat" placeholder="緯度 (N)" step="0.00001">
                 <input type="number" id="in_down_start_lng" placeholder="経度 (E)" step="0.00001">
                 <button class="btn-struct-gps" onclick="grabStructGps('in_down_start')">GPS</button>
             </div>
-            <div class="struct-coord-row">
+            <div class="struct-coord-row" id="row_down_end">
                 <span>下り終了(北)</span>
                 <input type="number" id="in_down_end_lat" placeholder="緯度 (N)" step="0.00001">
                 <input type="number" id="in_down_end_lng" placeholder="経度 (E)" step="0.00001">
@@ -478,7 +500,8 @@
     <div class="data-management">
         <div style="font-size: 12px; font-weight: bold; color: #cbd5e1;" id="stats-text">データ件数: 0 件</div>
         <div class="data-btn-row">
-            <button class="btn-data btn-export" onclick="exportDataJson()">統合データをJSON出力</button>
+            <button class="btn-data btn-export" onclick="exportDataJson()">JSONダウンロード</button>
+            <button class="btn-data btn-view" onclick="viewDataJson()">JSONを表示</button>
             <button class="btn-data btn-reset" onclick="promptResetAllData()">全データリセット</button>
         </div>
     </div>
@@ -595,6 +618,20 @@
             renderShutoList();
             renderStructList();
             updateStats();
+            onDirectionChange();
+        }
+
+        function onDirectionChange() {
+            const dir = document.getElementById('struct-direction').value;
+            const upInputs = ['in_up_start_lat', 'in_up_start_lng', 'in_up_end_lat', 'in_up_end_lng'];
+            const downInputs = ['in_down_start_lat', 'in_down_start_lng', 'in_down_end_lat', 'in_down_end_lng'];
+
+            upInputs.forEach(id => {
+                document.getElementById(id).disabled = (dir === 'DOWN');
+            });
+            downInputs.forEach(id => {
+                document.getElementById(id).disabled = (dir === 'UP');
+            });
         }
 
         function jumpToCurrentGPS() {
@@ -865,6 +902,8 @@
             }
 
             const cat = document.getElementById('struct-category').value;
+            const dir = document.getElementById('struct-direction').value;
+
             let attrs = {};
             if (cat === '防音壁') {
                 attrs.height = document.getElementById('attr-wall-height').value;
@@ -886,6 +925,7 @@
             data.structures.push({
                 id: 'struct_' + Date.now(),
                 category: cat,
+                direction: dir,
                 name: name,
                 attributes: attrs,
                 coords: coords
@@ -904,7 +944,9 @@
         }
 
         function readCoord(prefix) {
-            let lat = parseFloat(document.getElementById(prefix + '_lat').value);
+            let latInput = document.getElementById(prefix + '_lat');
+            if (latInput.disabled) return null;
+            let lat = parseFloat(latInput.value);
             let lng = parseFloat(document.getElementById(prefix + '_lng').value);
             if (!isNaN(lat) && !isNaN(lng)) {
                 return { lat: lat, lng: lng };
@@ -936,10 +978,12 @@
                 if (s.category === '橋梁') attrStr = `[分離帯開口: ${s.attributes.opening} / 床板隙間: ${s.attributes.gap}]`;
                 if (s.category === '料金所') attrStr = `[種別: ${s.attributes.tollType}]`;
 
+                let dirLabel = s.direction === 'DOWN' ? '下り線' : (s.direction === 'UP' ? '上り線' : '上下線');
+
                 html += `
                     <div class="struct-card">
                         <div class="struct-info">
-                            <div class="struct-title">[${s.category}] ${s.name}</div>
+                            <div class="struct-title">[${s.category}] ${s.name} (${dirLabel})</div>
                             <div class="struct-status-text">${attrStr} 登録済み</div>
                         </div>
                         <button class="btn-delete-struct" onclick="deleteStructure('${s.id}')">削除</button>
@@ -958,13 +1002,38 @@
 
         function exportDataJson() {
             let data = getStoredData();
-            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+            let jsonString = JSON.stringify(data, null, 2);
+            let blob = new Blob([jsonString], { type: "application/json;charset=utf-8;" });
+            let url = URL.createObjectURL(blob);
             let downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("href", url);
             downloadAnchor.setAttribute("download", `neco_integrated_master_export.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
-            downloadAnchor.remove();
+            setTimeout(() => {
+                document.body.removeChild(downloadAnchor);
+                URL.revokeObjectURL(url);
+            }, 100);
+        }
+
+        function viewDataJson() {
+            let data = getStoredData();
+            document.getElementById('json-textarea').value = JSON.stringify(data, null, 2);
+            document.getElementById('json-modal').style.display = 'flex';
+        }
+
+        function closeJsonModal() {
+            document.getElementById('json-modal').style.display = 'none';
+        }
+
+        function copyJsonText() {
+            const textarea = document.getElementById('json-textarea');
+            textarea.select();
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                alert("JSONデータをクリップボードにコピーしました！");
+            }).catch(err => {
+                alert("コピーに失敗しました。手動で選択してコピーしてください。");
+            });
         }
 
         function promptResetAllData() {
